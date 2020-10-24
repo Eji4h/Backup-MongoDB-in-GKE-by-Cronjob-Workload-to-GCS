@@ -1,0 +1,11 @@
+version: '3.7'
+services:
+  mongo:
+    image: mongo:4.2
+    environment: 
+      - MONGODB_PASSWORD=
+    volumes:
+      - ./:/mongo-sh
+    working_dir: /mongo-sh
+    entrypoint: [ "sleep", "9999" ]
+

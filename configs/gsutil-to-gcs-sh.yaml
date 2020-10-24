@@ -1,0 +1,12 @@
+apiVersion: v1
+data:
+  gsutil-to-gcs.sh: |-
+    #!/bin/bash
+
+    FOLDER=$(date +%Y%m%d)
+    gcloud auth activate-service-account --key-file=/service-key/service-key.json
+    gsutil -m rsync -r $BACKUPS_FOLDER gs://$GCS_BUCKET/$FOLDER
+kind: ConfigMap
+metadata:
+  name: gsutil-to-gcs-sh
+  namespace: mongodb

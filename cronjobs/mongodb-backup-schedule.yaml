@@ -1,0 +1,90 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: mongodb-backup-schedule
+  namespace: mongodb
+spec:
+  concurrencyPolicy: Replace
+  failedJobsHistoryLimit: 10
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - command:
+            - /gsutil-to-gcs-sh/gsutil-to-gcs.sh
+            envFrom:
+            - configMapRef:
+                name: mongodb-backup-schedule-env
+            image: google/cloud-sdk
+            imagePullPolicy: Always
+            name: gsutil-to-gcs
+            resources:
+              limits:
+                cpu: 500m
+                ephemeral-storage: 10Gi
+                memory: 256Mi
+              requests:
+                cpu: 200m
+                ephemeral-storage: 10Gi
+                memory: 256Mi
+            volumeMounts:
+            - mountPath: /backups
+              name: backups
+            - mountPath: /service-key
+              name: service-key
+            - mountPath: /gsutil-to-gcs-sh
+              name: gsutil-to-gcs-sh
+          initContainers:
+          - command:
+            - /mongodump-all-db-sh/mongodump-all-db.sh
+            envFrom:
+            - secretRef:
+                name: mongodb-user-password
+            - configMapRef:
+                name: mongodb-backup-schedule-env
+            image: mongo:4.2
+            imagePullPolicy: Always
+            name: mongodump-all-db
+            resources:
+              limits:
+                cpu: 500m
+                ephemeral-storage: 10Gi
+                memory: 256Mi
+              requests:
+                cpu: 200m
+                ephemeral-storage: 10Gi
+                memory: 256Mi
+            volumeMounts:
+            - mountPath: /mongodump-all-db-sh
+              name: mongodump-all-db-sh
+            - mountPath: /backups
+              name: backups
+          restartPolicy: Never
+          volumes:
+          - emptyDir:
+              sizeLimit: 10Gi
+            name: backups
+          - configMap:
+              defaultMode: 320
+              items:
+              - key: mongodump-all-db.sh
+                path: mongodump-all-db.sh
+              name: mongodump-all-db-sh
+            name: mongodump-all-db-sh
+          - configMap:
+              defaultMode: 320
+              items:
+              - key: gsutil-to-gcs.sh
+                path: gsutil-to-gcs.sh
+              name: gsutil-to-gcs-sh
+            name: gsutil-to-gcs-sh
+          - name: service-key
+            secret:
+              defaultMode: 320
+              items:
+              - key: service-key.json
+                path: service-key.json
+              secretName: gcs-service-account-key
+  schedule: "*/2 * * * *"
+  successfulJobsHistoryLimit: 10
