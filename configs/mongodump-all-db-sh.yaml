@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  mongodump-all-db.sh: |-
+    #!/bin/bash
+
+    mongodump -h $MONGO_HOST -u $MONGO_USERNAME -p $MONGO_PASSWORD -o $BACKUPS_FOLDER --forceTableScan --gzip
+kind: ConfigMap
+metadata:
+  name: mongodump-all-db-sh
+  namespace: mongodb
